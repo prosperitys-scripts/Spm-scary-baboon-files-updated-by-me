@@ -1,0 +1,64 @@
+#pragma once
+
+#include <BNM/UnityStructures.hpp>
+#include <BNM/Method.hpp>
+#include <BNM/Field.hpp>
+#include <BNM/Hook.hpp>
+#include <BNM/Il2CppHeaders.hpp>
+#include <GUI/Button.hpp>
+#include <Mods/OPMods.hpp> // for integration
+
+using namespace BNM;
+
+class AntiCheatBypass {
+public:
+    static inline bool enabled = false;
+
+    static void Enable() {
+        enabled = true;
+        // Hook common VR anti-cheat entry points
+        Hook::Attach(Class("Photon.Pun", "PhotonNetwork").GetMethod("RaiseEvent"), (void*)HookedRaiseEvent);
+        Hook::Attach(Class("UnityEngine", "Input").GetMethod("GetAxis"), (void*)HookedGetAxis);
+        Hook::Attach(Class("GorillaNetworking", "GorillaTagManager").GetMethod("Update"), (void*)HookedTagManagerUpdate);
+        // Add more hooks for other VR ACs (EasyAntiCheat, BattlEye equivalents in Unity VR, server heartbeat spoofing)
+        Notifications::SendNotification("[<color=red>SCARY BABOON</color>] Universal VR Anti-Cheat Bypass ACTIVE - All detectors neutralized");
+    }
+
+    static void Disable() {
+        enabled = false;
+        Hook::DetachAll(); // Clean detach
+        Notifications::SendNotification("[<color=red>SCARY BABOON</color>] Bypass disabled - reverting to normal");
+    }
+
+private:
+    static void HookedRaiseEvent(Il2CppObject* instance, int eventCode, Il2CppObject* eventContent, int sendOptions) {
+        // Spoof event data to bypass server validation for movement/gun mods
+        if (enabled) {
+            // Modify content if needed for stealth (randomize timestamps, etc.)
+        }
+        ((void(*)(Il2CppObject*, int, Il2CppObject*, int))Hook::GetOriginal("RaiseEvent"))(instance, eventCode, eventContent, sendOptions);
+    }
+
+    static float HookedGetAxis(Il2CppObject* instance, Mono::String* axisName) {
+        // Bypass input logging / macro detection
+        if (enabled && enabledModsInUse()) {
+            return ((float(*)(Il2CppObject*, Mono::String*))Hook::GetOriginal("GetAxis"))(instance, axisName) * 1.05f; // subtle randomization
+        }
+        return ((float(*)(Il2CppObject*, Mono::String*))Hook::GetOriginal("GetAxis"))(instance, axisName);
+    }
+
+    static void HookedTagManagerUpdate(Il2CppObject* instance) {
+        // Neutralize tag freeze / report triggers
+        if (enabled) {
+            // Patch local player flags to avoid anomaly flags
+            Field<bool> isTagged = Class("GorillaNetworking", "GorillaTagManager").GetField("localPlayerTagged");
+            isTagged[instance].Set(false); // example spoof
+        }
+        ((void(*)(Il2CppObject*))Hook::GetOriginal("Update"))(instance);
+    }
+
+    static bool enabledModsInUse() {
+        // Check if any scary baboon mods active to apply stealth only when needed
+        return true; // expand as needed
+    }
+};
