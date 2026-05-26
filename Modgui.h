@@ -20,24 +20,15 @@ using namespace BNM::IL2CPP;
 
 class ModGUI {
 public:
-    static inline SPMGUI::GUIManager* gui;
+    static inline SPMGUI::GUIManager* gui = nullptr;
     static inline bool cooldown = false;
     static inline int maxPages = 0;
     static inline float cooldownTime = 0.0f;
     static inline float rainbowCooldown = 0.0f;
     static inline int rainbowIndex = 0;
 
-    static inline Button backPage{
-        .name = O("<- Back"),
-        .method = []() { GUISettings::pageIndex--; },
-        .type = "button"
-    };
-
-    static inline Button nextPage{
-        .name = O("Next ->"),
-        .method = []() { GUISettings::pageIndex++; },
-        .type = "button"
-    };
+    static inline Button backPage{ .name = O("<- Back"), .method = []() { GUISettings::pageIndex--; }, .type = "button" };
+    static inline Button nextPage{ .name = O("Next ->"), .method = []() { GUISettings::pageIndex++; }, .type = "button" };
 
     static void Init();
     static void CorrectIndexLOL(std::vector<Button*>* modsReal);
