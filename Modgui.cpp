@@ -1,24 +1,7 @@
-#pragma once
-
-#include <BNM/UnityStructures.hpp>
-#include <BNM/Method.hpp>
-#include <BNM/Field.hpp>
-#include <BNM/Property.hpp>
-#include <BNM/Il2CppHeaders.hpp>
-#include <GUI/GUISettings.hpp>
-#include <Util/XRInput.hpp>
-#include <GUI/Button.hpp>
-#include <GUI/GUIManager.hpp>
-#include <GUI/Buttons.hpp>
-#include <GUI/NotificationLib/NotificationLib.h>
-#include <GUI/ModGUI.hpp>
+#include "ModGUI.hpp"
 #include <GUI/Style/Style.hpp>
 #include <GUI/Style/Styles.hpp>
-
-using namespace BNM;
-using namespace BNM::Structures;
-using namespace BNM::Structures::Unity;
-using namespace BNM::IL2CPP;
+#include <cmath>
 
 void ModGUI::Init() {
     Class GameObject = Class("UnityEngine", "GameObject");
@@ -77,7 +60,8 @@ void ModGUI::Update() {
     HandleMods();
 
     Class Time = Class("UnityEngine", "Time");
-    Property<float> time = Time.GetProperty("time");
+    Property<float> timeProp = Time.GetProperty("time");
+    float currentTime = timeProp();
 
     bool condition = XRInput::GetBoolFeature(BoolFeature::Primary2DAxisClick, Controller::Left);
     bool click = XRInput::GetBoolFeature(BoolFeature::Primary2DAxisClick, Controller::Right);
@@ -109,25 +93,28 @@ void ModGUI::Update() {
         if (click && !cooldown) {
             if (cbutton->type == "toggle") {
                 cbutton->enabled = !cbutton->enabled;
-                if (!cbutton->tooltip.empty()) Notifications::SendNotification("[<color=cyan>SCARY BABOON</color>] " + cbutton->tooltip);
+                if (!cbutton->tooltip.empty()) {
+                    Notifications::SendNotification("[<color=red>SCARY BABOON</color>] " + cbutton->tooltip);
+                }
                 if (cbutton->enabled && cbutton->enableMethod) cbutton->enableMethod();
                 if (!cbutton->enabled && cbutton->disableMethod) cbutton->disableMethod();
             } else if (cbutton->type == "button") {
                 if (cbutton->method) cbutton->method();
-                if (!cbutton->tooltip.empty()) Notifications::SendNotification("[<color=cyan>SCARY BABOON</color>] " + cbutton->tooltip);
+                if (!cbutton->tooltip.empty()) Notifications::SendNotification("[<color=red>SCARY BABOON</color>] " + cbutton->tooltip);
             }
             cooldown = true;
         }
 
-        if (time() > cooldownTime) {
-            if (up) { GUISettings::cursorIndex--; cooldownTime = time() + .25f; }
-            else if (down) { GUISettings::cursorIndex++; cooldownTime = time() + .25f; }
+        if (currentTime > cooldownTime) {
+            if (up) { GUISettings::cursorIndex--; cooldownTime = currentTime + 0.25f; }
+            else if (down) { GUISettings::cursorIndex++; cooldownTime = currentTime + 0.25f; }
             else if (right && cbutton->type == "slider") {
                 cbutton->slide = std::clamp(cbutton->slide + 1, 0, cbutton->maxSlide);
-                cooldownTime = time() + .25f;
-            } else if (left && cbutton->type == "slider") {
+                cooldownTime = currentTime + 0.25f;
+            }
+            else if (left && cbutton->type == "slider") {
                 cbutton->slide = std::clamp(cbutton->slide - 1, 0, cbutton->maxSlide);
-                cooldownTime = time() + .25f;
+                cooldownTime = currentTime + 0.25f;
             }
         }
     }
@@ -135,31 +122,20 @@ void ModGUI::Update() {
 
     CorrectIndexLOL(&modz);
 
+    // Horror theme
     Button* themeButton = FindButton("Menu Theme");
     Style* theme = &(Styles::allStyles[themeButton->slide]);
 
-    if (theme->styleName == "rainbow") {
-        static std::vector<std::string> rnb = {"red", "#FFA500", "yellow", "lime", "blue", "magenta"};
-        static float rainbowCooldown = 0.0f;
-        static int rainbowIndex = 0;
-
-        if (time() > rainbowCooldown) {
-            rainbowCooldown = time() + .25f;
-            rainbowIndex = (rainbowIndex + 1) % rnb.size();
-            theme = new Style{"rainbow", rnb[rainbowIndex], "white", rnb[rainbowIndex], "red"};
-        }
-    }
-
-    std::string menuText = "-- <color=" + theme->titleColor + ">SCARY BABOON MOD</color> [1.0.1] [" + std::to_string(GUISettings::pageIndex + 1) + "/" + std::to_string(maxPages + 1) + "]\n";
+    std::string menuText = "-- <color=red>SCARY BABOON MOD MENU</color> [v1.0.3] [" + std::to_string(GUISettings::pageIndex + 1) + "/" + std::to_string(maxPages + 1) + "]\n";
 
     for (int i = 0; i < modz.size(); ++i) {
-        menuText += (GUISettings::cursorIndex == i ? "<color=" + theme->pointerColor + ">></color> " : "") + modz[i]->getFullName();
+        menuText += (GUISettings::cursorIndex == i ? "<color=white>></color> " : "") + modz[i]->getFullName();
         if (modz[i]->type == "toggle") {
-            std::string ts = modz[i]->enabled ? "[<color=" + theme->enabledColor + ">ON</color>]" : "[<color=" + theme->disabledColor + ">OFF</color>]";
+            std::string ts = modz[i]->enabled ? "[<color=lime>ON</color>]" : "[<color=red>OFF</color>]";
             menuText += " " + ts;
         }
         menuText += "\n";
     }
 
-    gui->SetText(menuText);
+    if (gui) gui->SetText(menuText);
 }
